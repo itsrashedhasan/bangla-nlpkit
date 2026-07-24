@@ -1,0 +1,64 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "bangla-nlpkit"
+version = "0.1.0"
+description = "A lightweight NLP toolkit for Bangla (Bengali) text — script detection, normalization, tokenization, and romanization"
+readme = "README.md"
+license = { text = "MIT" }
+authors = [
+    { name = "Rashedul Hasan Shohan", email = "rashedullhasanshohan@gmail.com" }
+]
+keywords = [
+    "bangla", "bengali", "nlp", "tokenizer", "romanization",
+    "script-detection", "unicode", "low-resource-nlp", "bangladesh",
+    "chakma", "marma", "text-processing"
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "Intended Audience :: Developers",
+    "Topic :: Text Processing :: Linguistic",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Operating System :: OS Independent",
+    "Natural Language :: Bengali",
+]
+requires-python = ">=3.9"
+dependencies = []   # zero external dependencies — pure Python stdlib only
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-cov",
+    "ruff",
+    "mypy",
+]
+
+[project.urls]
+Homepage       = "https://github.com/itsrashedhasan/bangla-nlpkit"
+Repository     = "https://github.com/itsrashedhasan/bangla-nlpkit"
+Documentation  = "https://github.com/itsrashedhasan/bangla-nlpkit#readme"
+"Bug Tracker"  = "https://github.com/itsrashedhasan/bangla-nlpkit/issues"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts   = "-v"
+
+[tool.ruff]
+line-length    = 99
+target-version = "py39"
+
+[tool.mypy]
+python_version = "3.9"
+strict         = true
