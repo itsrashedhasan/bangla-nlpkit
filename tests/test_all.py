@@ -230,6 +230,62 @@ class TestCharTokenize:
 # romanizer tests
 # ===========================================================================
 
+class TestRomanizeDecomposedNukta:
+    """
+    Regression tests for decomposed-nukta handling (ড়/ঢ়/য় as base
+    consonant + U+09BC combining mark, vs. their precomposed single
+    codepoint forms).
+
+    This is bangla-nlpkit's core verified contribution relative to
+    existing tools: indic_transliteration (ISO 15919) was benchmarked
+    at a 100% failure rate (40/40) on decomposed-nukta input, silently
+    leaking an unconverted nukta character into its output. These tests
+    lock that correctness in as a permanent CI-enforced regression gate,
+    derived directly from benchmarks/benchmark_nukta.py.
+    """
+
+    NUKTA = "\u09BC"
+
+    # (base_precomposed_word, decomposed_word) pairs — a representative
+    # subset of the full 40-word benchmark set, covering word-initial,
+    # medial, and final positions for all three nukta letters (ড়/ঢ়/য়)
+    PAIRS = [
+        ("বিশ্ববিদ্যাল\u09DF", "বিশ্ববিদ্যাল\u09AF\u09BC"),       # university, য় word-final
+        ("সম\u09DF", "সম\u09AF\u09BC"),                             # time, য় word-final
+        ("হ\u09DFেছে", "হ\u09AF\u09BCেছে"),                          # has happened, য় word-medial
+        ("গ\u09DC", "গ\u09A1\u09BC"),                                # build, ড় word-final
+        ("পাহা\u09DC", "পাহা\u09A1\u09BC"),                          # mountain, ড় word-final
+        ("গা\u09DD", "গা\u09A2\u09BC"),                              # deep/dense, ঢ় word-final
+    ]
+
+    def test_precomposed_and_decomposed_produce_identical_output(self):
+        """The romanizer must produce the same output regardless of which
+        Unicode representation (precomposed vs. decomposed) the input uses."""
+        for precomposed, decomposed in self.PAIRS:
+            assert precomposed != decomposed, "test pair must actually differ in encoding"
+            out_pre = romanize(precomposed)
+            out_dec = romanize(decomposed)
+            assert out_pre == out_dec, (
+                f"Mismatch for {precomposed!r}: "
+                f"precomposed -> {out_pre!r}, decomposed -> {out_dec!r}"
+            )
+
+    def test_no_leaked_nukta_in_output(self):
+        """Output must never contain an unconverted nukta character —
+        this is the exact failure mode found in indic_transliteration."""
+        for precomposed, decomposed in self.PAIRS:
+            out_dec = romanize(decomposed)
+            assert self.NUKTA not in out_dec, f"Leaked nukta in output for {decomposed!r}: {out_dec!r}"
+            assert "়" not in out_dec, f"Leaked nukta in output for {decomposed!r}: {out_dec!r}"
+
+    def test_specific_known_values(self):
+        """Exact expected values for the words used in paper.md, so any
+        future change to these specific outputs is caught explicitly."""
+        assert romanize("বিশ্ববিদ্যাল\u09DF") == "bishbobidjaloy"
+        assert romanize("গ\u09DC") == "gor"
+        assert romanize("গা\u09DD") == "garh"
+
+
 class TestRomanize:
 
     def test_bangladesh(self):

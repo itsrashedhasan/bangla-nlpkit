@@ -15,7 +15,7 @@ A lightweight, zero-dependency Python toolkit for Bangla (Bengali) NLP — with 
 | `detector` | `detect_script`, `is_bangla` | Unicode-range script detection across 6 script families |
 | `normalizer` | `normalize`, `to_ascii_digits`, `to_bangla_digits`, `remove_invisible` | Unicode cleanup, ZWJ/ZWNJ fix, digit conversion, whitespace normalization |
 | `tokenizer` | `word_tokenize`, `sentence_tokenize`, `char_tokenize` | Bangla-aware word and sentence splitting with danda (।) support |
-| `romanizer` | `romanize`, `romanize_word`, `romanize_tokens` | Bangla script → Roman transliteration (NLC scheme) |
+| `romanizer` | `romanize`, `romanize_word`, `romanize_tokens` | Bangla script → Roman transliteration (NLC scheme), with verified correct handling of word-final inherent-vowel suppression and decomposed Unicode nukta sequences (ড়/ঢ়/য়) — see [benchmarks](benchmarks/) |
 
 **Zero external dependencies** — pure Python standard library only.
 
@@ -37,7 +37,7 @@ from bangla_nlpkit import detect_script, normalize, word_tokenize, romanize
 # Script detection
 result = detect_script("আমি বাংলায় কথা বলি")
 print(result.dominant)          # bangla
-print(result.scores)            # {'bangla': 1.0, 'latin': 0.0, ...}
+print(result.scores)            # {'bangla': 1.0, 'devanagari': 0.0, 'arabic': 0.0, 'latin': 0.0, 'chakma': 0.0, 'myanmar': 0.0}
 
 # Mixed script
 result = detect_script("আমি English মিশিয়ে বলি")
@@ -61,7 +61,7 @@ print(sents)    # ['আমি বাংলায় কথা বলি।', '�
 # Romanization
 print(romanize("বাংলাদেশ"))     # bangladesh
 print(romanize("ঢাকা"))         # dhaka
-print(romanize("মুক্তিযুদ্ধ")) # muktijuddho
+print(romanize("মুক্তিযুদ্ধ")) # muktijuddh
 ```
 
 ---
@@ -121,8 +121,36 @@ sentence_tokenize("বাক্য এক। বাক্য দুই।")
 ```python
 romanize("বাংলাদেশ")                           # 'bangladesh'
 romanize("আমি English মিশিয়ে বলি")            # 'ami English mishiye boli'
-romanize("আমি English বলি", passthrough_non_bangla=False)  # 'ami  boli'
+romanize("আমি English বলি", passthrough_non_bangla=False)  # 'amiboli'
 ```
+
+Note: with `passthrough_non_bangla=False`, ALL non-Bangla characters are
+dropped, including whitespace and punctuation surrounding non-Bangla
+segments — the output is not re-spaced afterward.
+
+---
+
+## Verified Correctness — Decomposed Unicode Nukta Handling
+
+Bengali characters ড়, ঢ়, and য় can appear in Unicode text either as a
+single precomposed code point or as a base consonant followed by a
+combining nukta mark (U+09BC). These two forms are **not** unified by
+standard Unicode NFC normalization (they are on the Unicode Composition
+Exclusion Table), so any tool relying on NFC normalization to treat them
+identically will fail on one form or the other.
+
+We benchmarked `bangla-nlpkit` against `indic_transliteration` (a
+maintained Python package implementing ISO 15919) on 40 curated Bangla
+words containing these characters in word-initial, medial, and final
+position:
+
+| System | Precomposed = Decomposed output match | Leaked nukta in output |
+|---|---|---|
+| **bangla-nlpkit** | 40/40 (100%) | 0/40 (0%) |
+| indic_transliteration (ISO 15919) | 0/40 (0%) | 40/40 (100%) |
+
+Full benchmark code and results: [`benchmarks/benchmark_nukta.py`](benchmarks/benchmark_nukta.py).
+This result has been independently reproduced across two platforms (Linux, Windows).
 
 ---
 
